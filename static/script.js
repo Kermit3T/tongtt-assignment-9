@@ -3,7 +3,7 @@ document.getElementById("experiment-form").addEventListener("submit", async func
 
     // Get form elements
     const form = event.target;
-    const submitButton = form.querySelector('button[type="submit"]');
+    const submitButton = form.querySelector('.submit-button');
     const loadingDiv = document.querySelector('.loading');
     const formElements = form.elements;
     
@@ -86,5 +86,24 @@ document.getElementById("lr").addEventListener("input", function(event) {
         event.target.setCustomValidity("Please enter a value between 0.001 and 1");
     } else {
         event.target.setCustomValidity("");
+    }
+});
+
+// Add clear results functionality
+document.querySelector('.clear-button').addEventListener('click', function() {
+    const resultsDiv = document.getElementById("results");
+    if (resultsDiv) {
+        resultsDiv.style.display = "none";
+        const resultImg = document.getElementById("result_gif");
+        if (resultImg) {
+            resultImg.src = "";
+            // Force browser to clear the image from memory
+            resultImg.removeAttribute('src');
+        }
+        // Scroll back to top
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
     }
 });

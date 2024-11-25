@@ -34,6 +34,12 @@ form {
     align-items: flex-start;
 }
 
+.button-group {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
 label {
     font-weight: bold;
     margin-bottom: 0.5rem;
@@ -77,8 +83,6 @@ input[type="number"] {
 
 button {
     padding: 0.75rem 1.5rem;
-    background-color: #28a745;
-    color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
@@ -86,8 +90,22 @@ button {
     transition: background-color 0.2s ease;
 }
 
-button:hover {
+.submit-button {
+    background-color: #28a745;
+    color: white;
+}
+
+.submit-button:hover {
     background-color: #218838;
+}
+
+.clear-button {
+    background-color: #dc3545;
+    color: white;
+}
+
+.clear-button:hover {
+    background-color: #c82333;
 }
 
 button:disabled {
