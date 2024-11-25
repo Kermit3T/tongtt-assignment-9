@@ -97,84 +97,104 @@ def update(frame, mlp, ax_input, ax_hidden, ax_gradient, X, y):
     ax_gradient.clear()
     
     # Set titles for all three visualizations
-    ax_input.set_title(f'Decision Boundary Learning at Step {frame * 10}')
-    ax_hidden.set_title(f'Feature Space Transformation at Step {frame * 10}')
-    ax_gradient.set_title(f'Network Architecture & Gradients at Step {frame * 10}')
+    ax_hidden.set_title(f'Hidden Space at Step {frame * 10}')
+    ax_input.set_title(f'Input Space at Step {frame * 10}')
+    ax_gradient.set_title(f'Gradients at Step {frame * 10}')
     
     # Perform training steps
     for _ in range(10):
         mlp.forward(X)
         mlp.backward(X, y)
     
-    # Create grid for visualization
-    x_min, x_max = -2, 2
-    y_min, y_max = -2, 2
-    xx, yy = np.meshgrid(np.linspace(x_min, x_max, 100),
-                        np.linspace(y_min, y_max, 100))
+    # Create common grid for both hidden space and input space visualizations
+    x_min, x_max = -1.5, 1.5
+    y_min, y_max = -1.5, 1.5
+    xx, yy = np.meshgrid(np.linspace(x_min, x_max, 30),
+                        np.linspace(y_min, y_max, 30))
     grid_points = np.c_[xx.ravel(), yy.ravel()]
     
-    ###########################################
-    # VISUALIZATION 1: INPUT SPACE           #
-    ###########################################
-    
-    # Get predictions for the grid points
+    # Get predictions for the grid points (needed for both visualizations)
     Z = mlp.forward(grid_points).reshape(xx.shape)
-    
-    # Plot decision boundary
-    ax_input.contourf(xx, yy, Z, levels=[-1, 0, 1], 
-                     colors=['#FF9999', '#9999FF'], alpha=0.5)
-    ax_input.contour(xx, yy, Z, levels=[0], colors='white', linewidths=2)
-    
-    # Plot training points
-    ax_input.scatter(X[:, 0], X[:, 1], c=y.ravel(), cmap='bwr',
-                    edgecolors='black', linewidth=1, s=50)
-    
-    # Draw the true circular decision boundary
-    circle = plt.Circle((0, 0), 1, color='gray', 
-                       fill=False, linestyle='--', linewidth=2)
-    ax_input.add_artist(circle)
-    
-    ax_input.set_xlim(x_min, x_max)
-    ax_input.set_ylim(y_min, y_max)
-    ax_input.set_xlabel('X₁')
-    ax_input.set_ylabel('X₂')
+    hidden_grid = mlp.hidden_features  # Store hidden features before they're overwritten
     
     ###########################################
-    # VISUALIZATION 2: HIDDEN SPACE          #
+    # VISUALIZATION 1: HIDDEN SPACE (3D View) #
     ###########################################
     
-    # Get hidden layer activations for grid points
-    mlp.forward(grid_points)
-    hidden_features_grid = mlp.hidden_features.reshape(-1, 3)
+    # Get transformed features from hidden layer for the actual data points
+    mlp.forward(X)  # This will update hidden_features for the actual data points
+    hidden_features = mlp.hidden_features
     
-    # Get hidden layer activations for data points
-    mlp.forward(X)
-    hidden_features_data = mlp.hidden_features
+    # Reshape grid for surface plotting
+    xx_hidden = hidden_grid[:, 0].reshape(xx.shape)
+    yy_hidden = hidden_grid[:, 1].reshape(xx.shape)
+    zz_hidden = hidden_grid[:, 2].reshape(xx.shape)
     
-    # Create 3D scatter plot of hidden features
-    scatter = ax_hidden.scatter(hidden_features_data[:, 0],
-                              hidden_features_data[:, 1],
-                              hidden_features_data[:, 2],
-                              c=y.ravel(), cmap='bwr',
-                              s=50, alpha=1.0)
+    # Plot transformed surface (blue)
+    surf = ax_hidden.plot_surface(xx_hidden, yy_hidden, zz_hidden,
+                                alpha=0.3, color='blue')
     
-    # Plot decision boundary plane in hidden space
-    w = mlp.W2.flatten()
-    b = mlp.b2.flatten()
-    xx_plane, yy_plane = np.meshgrid(np.linspace(-2, 2, 20),
-                                    np.linspace(-2, 2, 20))
+    # Calculate the decision boundary plane in hidden space
+    # The decision boundary is where W2 * h + b2 = 0
+    # For 3D hidden space: w1*x + w2*y + w3*z + b = 0
+    # Therefore z = -(w1*x + w2*y + b)/w3
+    w = mlp.W2.flatten()  # Shape: (3,)
+    b = mlp.b2.flatten()  # Shape: (1,)
+    
+    # Create a grid for the decision boundary plane
+    xx_plane, yy_plane = np.meshgrid(np.linspace(-1.5, 1.5, 20),
+                                    np.linspace(-1.5, 1.5, 20))
+    # Calculate z coordinates that satisfy the plane equation
     zz_plane = -(w[0] * xx_plane + w[1] * yy_plane + b[0]) / (w[2] + 1e-8)
     
+    # Plot the decision boundary plane
     ax_hidden.plot_surface(xx_plane, yy_plane, zz_plane,
-                          alpha=0.3, color='gray')
+                          alpha=0.4, color='tan')
     
-    ax_hidden.set_xlim(-2, 2)
-    ax_hidden.set_ylim(-2, 2)
-    ax_hidden.set_zlim(-2, 2)
-    ax_hidden.set_xlabel('h₁')
-    ax_hidden.set_ylabel('h₂')
-    ax_hidden.set_zlabel('h₃')
-    ax_hidden.view_init(elev=20, azim=45)
+    # Plot data points in hidden space
+    scatter = ax_hidden.scatter(hidden_features[:, 0], 
+                              hidden_features[:, 1], 
+                              hidden_features[:, 2], 
+                              c=y.ravel(), cmap='bwr', alpha=1.0,
+                              s=20)
+    
+    # Set 3D plot properties
+    ax_hidden.view_init(elev=15, azim=-60)
+    ax_hidden.set_xlabel('Feature 1')
+    ax_hidden.set_ylabel('Feature 2')
+    ax_hidden.set_zlabel('Feature 3')
+    ax_hidden.set_xlim(-1.5, 1.5)
+    ax_hidden.set_ylim(-1.5, 1.5)
+    ax_hidden.set_zlim(-1.5, 1.5)
+    
+    # Set 3D plot properties
+    ax_hidden.view_init(elev=15, azim=-60)
+    ax_hidden.set_xlabel('Feature 1')
+    ax_hidden.set_ylabel('Feature 2')
+    ax_hidden.set_zlabel('Feature 3')
+    ax_hidden.set_xlim(-1.5, 1.5)
+    ax_hidden.set_ylim(-1.5, 1.5)
+    ax_hidden.set_zlim(-1.5, 1.5)
+    
+    ############################################
+    # VISUALIZATION 2: INPUT SPACE (2D View)   #
+    ############################################
+    
+    # Create filled contour plot for decision regions
+    colors = ['#4444FF', '#FF4444']  # Blue, Red
+    levels = [-1, 0, 1]
+    cf = ax_input.contourf(xx, yy, Z, levels=levels, colors=colors, alpha=0.5)
+    
+    # Add decision boundary line
+    ax_input.contour(xx, yy, Z, levels=[0], colors='white', linewidths=2)
+    
+    # Plot original data points
+    ax_input.scatter(X[:, 0], X[:, 1], c=y.ravel(), cmap='bwr',
+                    edgecolors='black', linewidth=0.5, s=50, zorder=2)
+    
+    # Set input space plot limits
+    ax_input.set_xlim(x_min, x_max)
+    ax_input.set_ylim(y_min, y_max)
 
     ##############################################
     # VISUALIZATION 3: NETWORK ARCHITECTURE      #
